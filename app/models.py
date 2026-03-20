@@ -10,6 +10,7 @@ class User(Base):
     name = Column(String)
     email = Column(String, unique=True, index=True)
     role = Column(String)
+    hashed_password = Column(String)
 
     # Relationship: A user can have many orders
     orders = relationship("Order", back_populates="owner")

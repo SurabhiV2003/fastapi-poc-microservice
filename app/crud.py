@@ -1,12 +1,15 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
+from .auth import get_password_hash
+
 
 # --- USER CRUD ---
 def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
-def create_user(db: Session, user: schemas.UserCreate):
-    db_user = models.User(name=user.name, email=user.email, role=user.role)
+def create_user(db: Session, user: schemas.UserCreate, password: str):
+    hashed_pw = get_password_hash(password)
+    db_user = models.User(name=user.name, email=user.email, role=user.role, hashed_password=hashed_pw)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
