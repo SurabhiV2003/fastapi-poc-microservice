@@ -2,7 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List
-
+from fastapi.security import OAuth2PasswordRequestForm
+from .auth import create_access_token, verify_password, get_current_user, RoleChecker
 from .middleware import AuditMiddleware
 
 from . import models, schemas, crud
@@ -77,3 +78,21 @@ def get_user_orders_summary(user_id: int, db: Session = Depends(get_db)):
 @app.get("/")
 def read_root():
     return {"message": "API is live. Go to /docs for Swagger UI"}
+
+# 1. Login Endpoint to get JWT
+@app.post("/login", response_model=schemas.Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    
+    access_token = create_access_token(data={"sub": user.email, "role": user.role})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# 2. Protected Route (Requires Login + Admin Role)
+@app.get("/users/", response_model=List[schemas.User])
+def read_users(
+    db: Session = Depends(get_db), 
+    current_user = Depends(RoleChecker(["Admin"])) # RBAC applied here
+):
+    return db.query(models.User).all()

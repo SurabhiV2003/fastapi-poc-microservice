@@ -64,3 +64,16 @@ class AuditLog(BaseModel):
     status_code: int
 
     model_config = ConfigDict(from_attributes=True)
+
+    # --- SECURITY SCHEMAS ---
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+    role: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
